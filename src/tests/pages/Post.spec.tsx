@@ -6,7 +6,7 @@ import { getPrismicClient } from '../../services/prismic';
 const post = {
 	slug: 'test-new-post',
 	title: 'Title for new post',
-	content: 'Post content',
+	content: '<p>Post content</p>',
 	updatedAt: '25 de dezembro de 2021',
 };
 
@@ -22,7 +22,7 @@ jest.mock('next/router', () => {
 	};
 });
 
-describe('Posts page', () => {
+describe('Post page', () => {
 	it('renders correctly', () => {
 		const { getByText } = render(<Post post={post} />);
 
@@ -52,7 +52,7 @@ describe('Posts page', () => {
 					post: {
 						slug: 'test-new-post',
 						title: 'My new post',
-						content: 'Post content',
+						content: '<p>Post content</p>',
 						updatedAt: '25 de dezembro de 2021',
 					},
 				},
