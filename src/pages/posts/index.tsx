@@ -1,8 +1,16 @@
 import { GetStaticProps } from 'next';
+import SEO from '../../components/SEO';
+import { RichText } from 'prismic-dom';
+import Link from 'next/link';
+import styles from './posts.module.scss';
+import { getPrismicClient } from '../../services/prismic';
+import Prismic from '@prismicio/client';
 
 interface Post {
-	id: string;
+	slug: string;
 	title: string;
+	excerpt: string;
+	updatedAt: string;
 }
 
 interface PostsProps {
@@ -11,25 +19,58 @@ interface PostsProps {
 
 export default function Posts({ posts }: PostsProps) {
 	return (
-		<div>
-			<h1>Listagem de Posts</h1>
-			<ul>
-				{posts.map(post => (
-					<li key={post.id}>{post.title}</li>
-				))}
-			</ul>
-		</div>
+		<>
+			<SEO title='Posts' />
+
+			<main className={styles.container}>
+				<div className={styles.posts}>
+					{posts.map(post => (
+						<Link href={`/posts/${post.slug}`} key={post.slug}>
+							<a>
+								<time>{post.updatedAt}</time>
+								<strong>{post.title}</strong>
+								<p>{post.excerpt}</p>
+							</a>
+						</Link>
+					))}
+				</div>
+			</main>
+		</>
 	);
 }
 
-export const getStaticProps: GetStaticProps<PostsProps> = async () => {
-	const response = await fetch('http://localhost:3333/posts');
-	const posts = await response.json();
+export const getStaticProps: GetStaticProps = async () => {
+	const prismic = getPrismicClient();
+
+	const response = await prismic.query(
+		[Prismic.predicates.at('document.type', 'post')],
+		{
+			fetch: ['post.title', 'post.content'],
+		}
+	);
+
+	const posts = response.results.map(post => {
+		return {
+			slug: post.uid,
+			title: RichText.asText(post.data.title),
+			excerpt:
+				post.data.content.find(content => content.type === 'paragraph')?.text ??
+				'',
+			updatedAt: new Date(post.last_publication_date).toLocaleDateString(
+				'pt-BR',
+				{
+					day: '2-digit',
+					month: 'long',
+					year: 'numeric',
+				}
+			),
+		};
+	});
 
 	return {
 		props: {
 			posts,
 		},
-		revalidate: 5,
+		revalidate: 60 * 60 * 12,
 	};
 };
